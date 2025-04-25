@@ -1,169 +1,162 @@
 import { Component } from "../Component";
 import { Vector2 } from "../utils/Vector2";
+import { GameObject } from "../GameObject";
+import { Engine } from "../Engine";
 
 /**
- * Component that adds physics behavior to a GameObject
+ * RigidBody component for physics simulation
  */
 export class RigidBody extends Component {
+  // Physics properties
   public velocity: Vector2;
   public acceleration: Vector2;
   public mass: number;
   public drag: number;
   public useGravity: boolean;
   public isKinematic: boolean;
-  public freezeRotation: boolean;
-  public gravityScale: number;
-  
-  // Cached transform component for performance
-  private transform: any | null = null;
+  public isTrigger: boolean;
+  public bodyType: 'dynamic' | 'static' | 'kinematic';
   
   constructor() {
     super();
+    
     this.velocity = new Vector2(0, 0);
     this.acceleration = new Vector2(0, 0);
     this.mass = 1;
     this.drag = 0.1;
     this.useGravity = true;
     this.isKinematic = false;
-    this.freezeRotation = false;
-    this.gravityScale = 1;
+    this.isTrigger = false;
+    this.bodyType = 'dynamic';
   }
   
   /**
-   * Get the type of the component
+   * Get the type of this component
    * @returns The component type as a string
    */
   public getType(): string {
-    return "RigidBody";
+    return 'RigidBody';
   }
   
   /**
-   * Called when the component is first initialized
+   * Create a clone of this component
+   * @returns A new instance of the component
    */
-  public awake(): void {
-    // Cache the transform component for better performance
-    if (this.gameObject) {
-      this.transform = this.gameObject.getComponent("Transform");
-    }
+  public clone(): Component {
+    const clone = new RigidBody();
+    clone.velocity = this.velocity.clone();
+    clone.acceleration = this.acceleration.clone();
+    clone.mass = this.mass;
+    clone.drag = this.drag;
+    clone.useGravity = this.useGravity;
+    clone.isKinematic = this.isKinematic;
+    clone.isTrigger = this.isTrigger;
+    clone.bodyType = this.bodyType;
+    return clone;
   }
   
   /**
-   * Called every frame to update the component
+   * Apply a force to the rigidbody
+   * @param force The force to apply
+   */
+  public applyForce(force: Vector2): void {
+    // F = ma, so a = F/m
+    const accelerationFromForce = new Vector2(
+      force.x / this.mass,
+      force.y / this.mass
+    );
+    
+    this.acceleration.add(accelerationFromForce);
+  }
+  
+  /**
+   * Apply an impulse (immediate change in velocity)
+   * @param impulse The impulse to apply
+   */
+  public applyImpulse(impulse: Vector2): void {
+    const velocityChange = new Vector2(
+      impulse.x / this.mass,
+      impulse.y / this.mass
+    );
+    
+    this.velocity.add(velocityChange);
+  }
+  
+  /**
+   * Set the velocity directly
+   * @param velocity The new velocity
+   */
+  public setVelocity(velocity: Vector2): void {
+    this.velocity = velocity.clone();
+  }
+  
+  /**
+   * Called by the physics system to update the rigidbody
    * @param deltaTime Time elapsed since the last update
    */
-  public update(deltaTime: number): void {
-    if (!this.transform || this.isKinematic) return;
+  override update(deltaTime: number): void {
+    if (this.isKinematic || this.bodyType === 'static') {
+      // Kinematic or static bodies are not affected by physics
+      return;
+    }
     
-    // Apply gravity if enabled
+    // Apply gravity
     if (this.useGravity) {
-      this.acceleration.y += 9.8 * this.gravityScale;
+      this.acceleration.y += 9.8; // Gravity acceleration (9.8 m/s²)
     }
     
     // Update velocity based on acceleration
     this.velocity.x += this.acceleration.x * deltaTime;
     this.velocity.y += this.acceleration.y * deltaTime;
     
-    // Apply drag to slow down movement
-    this.velocity.x *= (1 - this.drag * deltaTime);
-    this.velocity.y *= (1 - this.drag * deltaTime);
+    // Apply drag
+    this.velocity.x *= (1 - this.drag);
+    this.velocity.y *= (1 - this.drag);
     
     // Update position based on velocity
-    this.transform.position.x += this.velocity.x * deltaTime;
-    this.transform.position.y += this.velocity.y * deltaTime;
+    if (this.gameObject) {
+      const transform = this.gameObject.getComponent('Transform');
+      if (transform && 'position' in transform) {
+        const position = (transform as any).position;
+        position.x += this.velocity.x * deltaTime;
+        position.y += this.velocity.y * deltaTime;
+      }
+    }
     
-    // Reset acceleration for next frame
-    this.acceleration.set(0, 0);
+    // Reset acceleration for the next frame
+    this.acceleration.x = 0;
+    this.acceleration.y = 0;
   }
   
   /**
-   * Apply a force to the rigid body
-   * @param force Force vector to apply
+   * Serialize the component to JSON
    */
-  public applyForce(force: Vector2): void {
-    this.acceleration.x += force.x / this.mass;
-    this.acceleration.y += force.y / this.mass;
-  }
-  
-  /**
-   * Apply an impulse to the rigid body (instantaneous change in velocity)
-   * @param impulse Impulse vector to apply
-   */
-  public applyImpulse(impulse: Vector2): void {
-    this.velocity.x += impulse.x / this.mass;
-    this.velocity.y += impulse.y / this.mass;
-  }
-  
-  /**
-   * Create a clone of this component
-   * @returns A new RigidBody component
-   */
-  public clone(): RigidBody {
-    const clone = new RigidBody();
-    
-    clone.velocity.copy(this.velocity);
-    clone.acceleration.copy(this.acceleration);
-    clone.mass = this.mass;
-    clone.drag = this.drag;
-    clone.useGravity = this.useGravity;
-    clone.isKinematic = this.isKinematic;
-    clone.freezeRotation = this.freezeRotation;
-    clone.gravityScale = this.gravityScale;
-    
-    return clone;
-  }
-  
-  /**
-   * Serialize the component data to JSON
-   * @returns Serialized component data
-   */
-  public serialize(): Record<string, any> {
+  override serialize(): any {
     return {
-      velocity: { x: this.velocity.x, y: this.velocity.y },
-      acceleration: { x: this.acceleration.x, y: this.acceleration.y },
+      type: 'RigidBody',
+      velocity: this.velocity.serialize(),
+      acceleration: this.acceleration.serialize(),
       mass: this.mass,
       drag: this.drag,
       useGravity: this.useGravity,
       isKinematic: this.isKinematic,
-      freezeRotation: this.freezeRotation,
-      gravityScale: this.gravityScale
+      isTrigger: this.isTrigger,
+      bodyType: this.bodyType
     };
   }
   
   /**
-   * Deserialize component data from JSON
-   * @param data The data to deserialize
+   * Deserialize the component from JSON
+   * @param data The JSON data
    */
-  public deserialize(data: Record<string, any>): void {
-    if (data.velocity) {
-      this.velocity.set(data.velocity.x, data.velocity.y);
-    }
-    
-    if (data.acceleration) {
-      this.acceleration.set(data.acceleration.x, data.acceleration.y);
-    }
-    
-    if (typeof data.mass === 'number') {
-      this.mass = data.mass;
-    }
-    
-    if (typeof data.drag === 'number') {
-      this.drag = data.drag;
-    }
-    
-    if (typeof data.useGravity === 'boolean') {
-      this.useGravity = data.useGravity;
-    }
-    
-    if (typeof data.isKinematic === 'boolean') {
-      this.isKinematic = data.isKinematic;
-    }
-    
-    if (typeof data.freezeRotation === 'boolean') {
-      this.freezeRotation = data.freezeRotation;
-    }
-    
-    if (typeof data.gravityScale === 'number') {
-      this.gravityScale = data.gravityScale;
-    }
+  override deserialize(data: any): void {
+    this.velocity = Vector2.deserialize(data.velocity);
+    this.acceleration = Vector2.deserialize(data.acceleration);
+    this.mass = data.mass;
+    this.drag = data.drag;
+    this.useGravity = data.useGravity;
+    this.isKinematic = data.isKinematic;
+    this.isTrigger = data.isTrigger;
+    this.bodyType = data.bodyType;
   }
 }

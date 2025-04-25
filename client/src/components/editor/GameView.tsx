@@ -3,6 +3,7 @@ import { useEditor } from '@/lib/stores/useEditor';
 import { useKeyboardControls } from '@react-three/drei';
 import { Scene } from '@/lib/engine/Scene';
 import { Controls } from '@/lib/engine/utils/Controls';
+import { RigidBody } from '@/lib/engine/components/RigidBody';
 
 const GameView = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -52,8 +53,11 @@ const GameView = () => {
       
       const speedFactor = 5; // Movement speed factor
       
-      const rigidBody = player.getComponent('RigidBody');
-      if (rigidBody) {
+      const rigidBodyComponent = player.getComponent('RigidBody');
+      if (rigidBodyComponent) {
+        // Cast to RigidBody type to access velocity
+        const rigidBody = rigidBodyComponent as RigidBody;
+        
         // Reset velocity at the start of each frame
         rigidBody.velocity.x = 0;
         rigidBody.velocity.y = 0;

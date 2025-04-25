@@ -1,123 +1,28 @@
 import { Component } from "../Component";
-import { generateUUID } from "../utils/UUID";
+import { Vector2 } from "../utils/Vector2";
 
 /**
- * Component that handles scripting and game logic
+ * Script component for attaching visual scripts to game objects
  */
 export class Script extends Component {
-  /** Unique identifier for the script component */
-  public id: string;
+  // Script properties
+  public variables: Record<string, any>;
+  public callbacks: Record<string, Function>;
+  public scriptName: string;
   
-  /** Name of the script */
-  public name: string;
-  
-  /** Variables used by the script */
-  public variables: Record<string, any> = {};
-  
-  /** Callback functions for different events */
-  public callbacks: Record<string, Function> = {};
-  
-  /**
-   * Create a new Script component
-   * @param name The name of the script
-   */
-  constructor(name: string = "") {
+  constructor() {
     super();
-    this.id = generateUUID();
-    this.name = name || `Script_${this.id.substring(0, 8)}`;
-    
-    // Initialize default callbacks
-    this.callbacks = {
-      start: () => {},
-      update: () => {},
-      onDestroy: () => {},
-      onClick: () => {},
-      onCollisionEnter: () => {},
-      onCollisionExit: () => {}
-    };
+    this.variables = {};
+    this.callbacks = {};
+    this.scriptName = "Script";
   }
   
   /**
-   * Get the type of the component
+   * Get the type of this component
    * @returns The component type as a string
    */
   public getType(): string {
-    return "Script";
-  }
-  
-  /**
-   * Called when the component is started
-   */
-  public start(): void {
-    if (this.callbacks.start) {
-      this.callbacks.start();
-    }
-  }
-  
-  /**
-   * Called every frame to update the component
-   * @param deltaTime Time elapsed since the last update
-   */
-  public update(deltaTime: number): void {
-    if (this.callbacks.update) {
-      this.callbacks.update(deltaTime);
-    }
-  }
-  
-  /**
-   * Called when the component is destroyed
-   */
-  public onDestroy(): void {
-    if (this.callbacks.onDestroy) {
-      this.callbacks.onDestroy();
-    }
-  }
-  
-  /**
-   * Called when the game object is clicked
-   */
-  public onClick(): void {
-    if (this.callbacks.onClick) {
-      this.callbacks.onClick();
-    }
-  }
-  
-  /**
-   * Called when the game object collides with another
-   * @param other The other game object involved in the collision
-   */
-  public onCollisionEnter(other: any): void {
-    if (this.callbacks.onCollisionEnter) {
-      this.callbacks.onCollisionEnter(other);
-    }
-  }
-  
-  /**
-   * Called when the game object stops colliding with another
-   * @param other The other game object that was involved in the collision
-   */
-  public onCollisionExit(other: any): void {
-    if (this.callbacks.onCollisionExit) {
-      this.callbacks.onCollisionExit(other);
-    }
-  }
-  
-  /**
-   * Get a variable value
-   * @param name The name of the variable
-   * @returns The value of the variable or undefined if not found
-   */
-  public getVariable(name: string): any {
-    return this.variables[name];
-  }
-  
-  /**
-   * Set a variable value
-   * @param name The name of the variable
-   * @param value The value to set
-   */
-  public setVariable(name: string, value: any): void {
-    this.variables[name] = value;
+    return 'Script';
   }
   
   /**
@@ -125,40 +30,101 @@ export class Script extends Component {
    * @returns A new instance of the component
    */
   public clone(): Component {
-    const clonedScript = new Script(this.name);
+    const clone = new Script();
+    clone.scriptName = this.scriptName;
     
     // Clone variables
-    clonedScript.variables = { ...this.variables };
+    for (const key in this.variables) {
+      const value = this.variables[key];
+      if (typeof value === 'object' && value !== null) {
+        if ('clone' in value && typeof value.clone === 'function') {
+          // If value has a clone method, use it
+          clone.variables[key] = value.clone();
+        } else {
+          // Otherwise do a shallow copy
+          clone.variables[key] = { ...value };
+        }
+      } else {
+        // For primitives, copy directly
+        clone.variables[key] = value;
+      }
+    }
     
-    // Clone callbacks (note: this is a shallow copy, function references are maintained)
-    clonedScript.callbacks = { ...this.callbacks };
+    // Callbacks can't be properly cloned (functions with closures), so we leave them empty
+    // They should be set up again after cloning
     
-    return clonedScript;
+    return clone;
   }
   
   /**
-   * Serialize the component data to JSON
-   * @returns Serialized component data
+   * Set a script variable
+   * @param name Variable name
+   * @param value Variable value
    */
-  public serialize(): Record<string, any> {
+  public setVariable(name: string, value: any): void {
+    this.variables[name] = value;
+  }
+  
+  /**
+   * Get a script variable
+   * @param name Variable name
+   * @returns Variable value or undefined if not found
+   */
+  public getVariable(name: string): any {
+    return this.variables[name];
+  }
+  
+  /**
+   * Register a callback function
+   * @param eventName Event name (e.g., 'update', 'onCollisionEnter')
+   * @param callback Function to call when the event occurs
+   */
+  public registerCallback(eventName: string, callback: Function): void {
+    this.callbacks[eventName] = callback;
+  }
+  
+  /**
+   * Execute a callback if it exists
+   * @param eventName Event name
+   * @param args Arguments to pass to the callback
+   * @returns Result of the callback or undefined if not found
+   */
+  public executeCallback(eventName: string, ...args: any[]): any {
+    const callback = this.callbacks[eventName];
+    if (callback && typeof callback === 'function') {
+      return callback(...args);
+    }
+    return undefined;
+  }
+  
+  /**
+   * Called every frame to update the component
+   * @param deltaTime Time elapsed since the last update
+   */
+  override update(deltaTime: number): void {
+    // Execute update callback if it exists
+    this.executeCallback('update', deltaTime);
+  }
+  
+  /**
+   * Serialize the component to JSON
+   */
+  override serialize(): any {
+    // We can't serialize functions, so we only save the variable data
     return {
-      type: this.getType(),
-      id: this.id,
-      name: this.name,
-      variables: this.variables,
-      // Note: callbacks can't be serialized directly as functions,
-      // they would need to be reconstructed during deserialization
+      type: 'Script',
+      scriptName: this.scriptName,
+      variables: this.variables
     };
   }
   
   /**
-   * Deserialize component data from JSON
-   * @param data The data to deserialize
+   * Deserialize the component from JSON
+   * @param data The JSON data
    */
-  public deserialize(data: Record<string, any>): void {
-    if (data.id) this.id = data.id;
-    if (data.name) this.name = data.name;
-    if (data.variables) this.variables = { ...data.variables };
-    // Note: callbacks would need to be reconstructed here based on the specific approach
+  override deserialize(data: any): void {
+    this.scriptName = data.scriptName;
+    this.variables = data.variables || {};
+    // Callbacks need to be set up programmatically after loading
   }
 }

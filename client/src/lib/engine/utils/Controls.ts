@@ -1,5 +1,5 @@
 /**
- * Game controls enum 
+ * Controls enum for keyboard input
  */
 export enum Controls {
   forward = 'forward',
@@ -10,7 +10,7 @@ export enum Controls {
 }
 
 /**
- * Key mapping configuration for game controls
+ * Key mapping configuration for the keyboard controls
  */
 export const keyMap = [
   { name: Controls.forward, keys: ['ArrowUp', 'KeyW'] },
