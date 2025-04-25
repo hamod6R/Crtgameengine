@@ -7,14 +7,17 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import Toolbar from "./Toolbar";
 import Canvas from "./Canvas";
+import GameView from "./GameView";
 import SceneHierarchy from "./SceneHierarchy";
 import Inspector from "./Inspector";
 import AssetBrowser from "./AssetBrowser";
 import ProjectManager from "./ProjectManager";
 import AnimationEditor from "./AnimationEditor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MoveHorizontal, Save, Undo, Redo, Home, Eye, Play, Pause } from "lucide-react";
+import { MoveHorizontal, Save, Undo, Redo, Home, Eye, Play, Pause, Gamepad2 } from "lucide-react";
 import { useAudio } from "@/lib/stores/useAudio";
+import { KeyboardControls } from "@react-three/drei";
+import { keyMap } from "@/lib/engine/utils/Controls";
 
 const Editor = () => {
   const [selectedTab, setSelectedTab] = useState("hierarchy");
@@ -210,9 +213,28 @@ const Editor = () => {
             <MoveHorizontal className="h-4 w-4" />
           </ResizableHandle>
 
-          {/* Center canvas */}
+          {/* Center content - Canvas & Game View */}
           <ResizablePanel defaultSize={60}>
-            <Canvas />
+            <Tabs defaultValue="canvas" className="h-full flex flex-col">
+              <TabsList className="mx-2 mt-2 mb-0">
+                <TabsTrigger value="canvas" className="flex-1">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Canvas
+                </TabsTrigger>
+                <TabsTrigger value="game" className="flex-1">
+                  <Gamepad2 className="h-4 w-4 mr-2" />
+                  Game
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="canvas" className="flex-1 p-0 m-0">
+                <Canvas />
+              </TabsContent>
+              <TabsContent value="game" className="flex-1 p-0 m-0">
+                <KeyboardControls map={keyMap}>
+                  <GameView />
+                </KeyboardControls>
+              </TabsContent>
+            </Tabs>
           </ResizablePanel>
 
           <ResizableHandle withHandle>
