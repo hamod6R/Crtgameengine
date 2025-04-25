@@ -60,6 +60,24 @@ export class Scene {
   }
   
   /**
+   * Find the first game object by tag
+   * @param tag The tag to search for
+   * @returns The first game object with the specified tag, or undefined if not found
+   */
+  public findGameObjectByTag(tag: string): GameObject | undefined {
+    return this.gameObjects.find(obj => obj.tag === tag);
+  }
+  
+  /**
+   * Find all game objects by tag
+   * @param tag The tag to search for
+   * @returns Array of game objects with the specified tag
+   */
+  public findGameObjectsByTag(tag: string): GameObject[] {
+    return this.gameObjects.filter(obj => obj.tag === tag);
+  }
+  
+  /**
    * Initialize all game objects in the scene
    */
   public awake(): void {

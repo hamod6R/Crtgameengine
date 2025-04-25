@@ -1,5 +1,6 @@
 import { Scene } from "./Scene";
 import { Physics } from "./physics/Physics";
+import { Renderer } from "./Renderer";
 
 /**
  * Main engine class that handles the game loop and manages scenes
@@ -11,9 +12,11 @@ export class Engine {
   private lastFrameTime: number = 0;
   private physics: Physics;
   private animationFrameId: number | null = null;
+  public renderer: Renderer;
   
   constructor() {
     this.physics = new Physics();
+    this.renderer = new Renderer();
     console.log("Game Engine initialized");
   }
   

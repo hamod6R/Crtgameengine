@@ -23,7 +23,7 @@ const GameView = () => {
       canvas.height = container.clientHeight;
       
       // Update renderer if engine is using this canvas
-      if (engine && engine.renderer) {
+      if (engine) {
         engine.renderer.setSize(canvas.width, canvas.height);
       }
     };
