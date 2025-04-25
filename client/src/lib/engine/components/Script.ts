@@ -1,32 +1,40 @@
 import { Component } from "../Component";
+import { generateUUID } from "../utils/UUID";
 
 /**
- * Interface for script callbacks
- */
-export interface ScriptCallbacks {
-  awake?: () => void;
-  start?: () => void;
-  update?: (deltaTime: number) => void;
-  onCollisionEnter?: (other: any) => void;
-  onCollisionExit?: (other: any) => void;
-  onTriggerEnter?: (other: any) => void;
-  onTriggerExit?: (other: any) => void;
-  onDestroy?: () => void;
-}
-
-/**
- * Component that allows custom code execution on GameObjects
+ * Component that handles scripting and game logic
  */
 export class Script extends Component {
-  private callbacks: ScriptCallbacks;
-  public name: string;
-  public variables: Record<string, any>;
+  /** Unique identifier for the script component */
+  public id: string;
   
-  constructor(name: string, callbacks: ScriptCallbacks = {}, variables: Record<string, any> = {}) {
+  /** Name of the script */
+  public name: string;
+  
+  /** Variables used by the script */
+  public variables: Record<string, any> = {};
+  
+  /** Callback functions for different events */
+  public callbacks: Record<string, Function> = {};
+  
+  /**
+   * Create a new Script component
+   * @param name The name of the script
+   */
+  constructor(name: string = "") {
     super();
-    this.name = name;
-    this.callbacks = callbacks;
-    this.variables = { ...variables };
+    this.id = generateUUID();
+    this.name = name || `Script_${this.id.substring(0, 8)}`;
+    
+    // Initialize default callbacks
+    this.callbacks = {
+      start: () => {},
+      update: () => {},
+      onDestroy: () => {},
+      onClick: () => {},
+      onCollisionEnter: () => {},
+      onCollisionExit: () => {}
+    };
   }
   
   /**
@@ -35,15 +43,6 @@ export class Script extends Component {
    */
   public getType(): string {
     return "Script";
-  }
-  
-  /**
-   * Called when the component is first initialized
-   */
-  public awake(): void {
-    if (this.callbacks.awake) {
-      this.callbacks.awake();
-    }
   }
   
   /**
@@ -75,8 +74,17 @@ export class Script extends Component {
   }
   
   /**
-   * Called when a collision begins
-   * @param other The other collider
+   * Called when the game object is clicked
+   */
+  public onClick(): void {
+    if (this.callbacks.onClick) {
+      this.callbacks.onClick();
+    }
+  }
+  
+  /**
+   * Called when the game object collides with another
+   * @param other The other game object involved in the collision
    */
   public onCollisionEnter(other: any): void {
     if (this.callbacks.onCollisionEnter) {
@@ -85,8 +93,8 @@ export class Script extends Component {
   }
   
   /**
-   * Called when a collision ends
-   * @param other The other collider
+   * Called when the game object stops colliding with another
+   * @param other The other game object that was involved in the collision
    */
   public onCollisionExit(other: any): void {
     if (this.callbacks.onCollisionExit) {
@@ -95,55 +103,37 @@ export class Script extends Component {
   }
   
   /**
-   * Called when a trigger collision begins
-   * @param other The other collider
-   */
-  public onTriggerEnter(other: any): void {
-    if (this.callbacks.onTriggerEnter) {
-      this.callbacks.onTriggerEnter(other);
-    }
-  }
-  
-  /**
-   * Called when a trigger collision ends
-   * @param other The other collider
-   */
-  public onTriggerExit(other: any): void {
-    if (this.callbacks.onTriggerExit) {
-      this.callbacks.onTriggerExit(other);
-    }
-  }
-  
-  /**
-   * Set a variable value
-   * @param name Variable name
-   * @param value Variable value
-   */
-  public setVariable(name: string, value: any): void {
-    this.variables[name] = value;
-  }
-  
-  /**
    * Get a variable value
-   * @param name Variable name
-   * @returns Variable value
+   * @param name The name of the variable
+   * @returns The value of the variable or undefined if not found
    */
   public getVariable(name: string): any {
     return this.variables[name];
   }
   
   /**
-   * Create a clone of this component
-   * @returns A new Script component
+   * Set a variable value
+   * @param name The name of the variable
+   * @param value The value to set
    */
-  public clone(): Script {
-    // Note: when cloning a script, we copy the variable values but not the callback references
-    // In a full implementation, we would need a way to properly clone script functionality
-    return new Script(
-      this.name,
-      this.callbacks,
-      { ...this.variables } // Create a shallow copy of variables
-    );
+  public setVariable(name: string, value: any): void {
+    this.variables[name] = value;
+  }
+  
+  /**
+   * Create a clone of this component
+   * @returns A new instance of the component
+   */
+  public clone(): Component {
+    const clonedScript = new Script(this.name);
+    
+    // Clone variables
+    clonedScript.variables = { ...this.variables };
+    
+    // Clone callbacks (note: this is a shallow copy, function references are maintained)
+    clonedScript.callbacks = { ...this.callbacks };
+    
+    return clonedScript;
   }
   
   /**
@@ -152,10 +142,12 @@ export class Script extends Component {
    */
   public serialize(): Record<string, any> {
     return {
+      type: this.getType(),
+      id: this.id,
       name: this.name,
       variables: this.variables,
-      // Note: We can't serialize the callbacks, so they would need to be
-      // recreated from the script code when deserializing
+      // Note: callbacks can't be serialized directly as functions,
+      // they would need to be reconstructed during deserialization
     };
   }
   
@@ -164,15 +156,9 @@ export class Script extends Component {
    * @param data The data to deserialize
    */
   public deserialize(data: Record<string, any>): void {
-    if (typeof data.name === 'string') {
-      this.name = data.name;
-    }
-    
-    if (data.variables && typeof data.variables === 'object') {
-      this.variables = { ...data.variables };
-    }
-    
-    // Note: The callbacks would need to be recreated from the script code
-    // This would typically be handled by the scripting system
+    if (data.id) this.id = data.id;
+    if (data.name) this.name = data.name;
+    if (data.variables) this.variables = { ...data.variables };
+    // Note: callbacks would need to be reconstructed here based on the specific approach
   }
 }

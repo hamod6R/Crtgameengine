@@ -204,7 +204,7 @@ const BlockScriptEditor = () => {
       
       for (const comp of comps) {
         const scriptComp = comp as Script;
-        if (scriptComp.name === script.name) {
+        if (scriptComp && scriptComp.name === script.name) {
           scriptComponent = scriptComp;
           break;
         }

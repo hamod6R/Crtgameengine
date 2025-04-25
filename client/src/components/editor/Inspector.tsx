@@ -78,7 +78,8 @@ const ComponentTypes = [
   { name: "Rigid Body", type: "RigidBody" },
   { name: "Box Collider", type: "Collider", subtype: "box" },
   { name: "Circle Collider", type: "Collider", subtype: "circle" },
-  { name: "Animator", type: "Animator" }
+  { name: "Animator", type: "Animator" },
+  { name: "Script", type: "Script" }
 ];
 
 const Inspector = () => {
@@ -173,6 +174,11 @@ const Inspector = () => {
             collider.radius = 50;
           }
           selectedGameObject.addComponent(collider);
+          break;
+        }
+        case "Script": {
+          const script = new Script(`Script_${new Date().getTime()}`);
+          selectedGameObject.addComponent(script);
           break;
         }
         // Additional component types would go here
