@@ -85,24 +85,29 @@ const GameView = () => {
       const scripts = player.getComponents('Script');
       if (scripts && scripts.length > 0) {
         for (const scriptComp of scripts) {
-          const script = scriptComp as any;
-          
-          // If the script has these control callbacks, call them
-          if (controls.forward && script.callbacks?.onMoveForward) {
-            script.callbacks.onMoveForward();
-          }
-          if (controls.back && script.callbacks?.onMoveBack) {
-            script.callbacks.onMoveBack();
-          }
-          if (controls.left && script.callbacks?.onMoveLeft) {
-            script.callbacks.onMoveLeft();
-          }
-          if (controls.right && script.callbacks?.onMoveRight) {
-            script.callbacks.onMoveRight();
-          }
-          if (controls.jump && script.callbacks?.onJump) {
-            script.callbacks.onJump();
-          }
+          // Cast to Script to access executeCallback method
+          import('../../lib/engine/components/Script').then(({ Script }) => {
+            const script = scriptComp as any;
+            
+            // Execute the appropriate callbacks based on controls
+            if (controls.forward) {
+              script.executeCallback('onMoveForward');
+            }
+            if (controls.back) {
+              script.executeCallback('onMoveBack');
+            }
+            if (controls.left) {
+              script.executeCallback('onMoveLeft');
+            }
+            if (controls.right) {
+              script.executeCallback('onMoveRight');
+            }
+            if (controls.jump) {
+              script.executeCallback('onJump');
+            }
+          }).catch(err => {
+            console.error('Failed to load Script component:', err);
+          });
         }
       }
     };

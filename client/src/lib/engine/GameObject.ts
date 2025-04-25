@@ -61,7 +61,21 @@ export class GameObject {
    * @returns The component, or undefined if not found
    */
   public getComponent(componentType: string): Component | undefined {
-    return this.components.get(componentType);
+    // For regular components, just look up by type
+    if (componentType !== "Script") {
+      return this.components.get(componentType);
+    }
+    
+    // For scripts, find the first one (if any)
+    let scriptComponent: Component | undefined = undefined;
+    
+    this.components.forEach((component, key) => {
+      if (key.startsWith(`${componentType}_`) && !scriptComponent) {
+        scriptComponent = component;
+      }
+    });
+    
+    return scriptComponent;
   }
   
   /**
@@ -198,12 +212,19 @@ export class GameObject {
         clone.addComponent(component.clone());
       } else {
         // For Transform, copy the values instead of replacing
-        const originalTransform = component as Transform;
-        const cloneTransform = clone.getComponent("Transform") as Transform;
+        const originalTransform = component as any;
+        const cloneTransform = clone.getComponent("Transform") as any;
         
-        cloneTransform.position.copy(originalTransform.position);
-        cloneTransform.rotation = originalTransform.rotation;
-        cloneTransform.scale.copy(originalTransform.scale);
+        if (originalTransform && cloneTransform && 
+            originalTransform.position && cloneTransform.position &&
+            originalTransform.scale && cloneTransform.scale) {
+          
+          cloneTransform.position.x = originalTransform.position.x;
+          cloneTransform.position.y = originalTransform.position.y;
+          cloneTransform.rotation = originalTransform.rotation;
+          cloneTransform.scale.x = originalTransform.scale.x;
+          cloneTransform.scale.y = originalTransform.scale.y;
+        }
       }
     });
     
