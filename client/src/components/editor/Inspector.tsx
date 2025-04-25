@@ -15,6 +15,9 @@ import { Transform } from "@/lib/engine/components/Transform";
 import { SpriteRenderer } from "@/lib/engine/components/SpriteRenderer";
 import { RigidBody } from "@/lib/engine/components/RigidBody";
 import { Collider } from "@/lib/engine/components/Collider";
+import { Script } from "@/lib/engine/components/Script";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import BlockScriptEditor from "./BlockScriptEditor";
 import { 
   Settings,
   Plus,
@@ -25,7 +28,8 @@ import {
   Image as ImageIcon,
   CircleOff,
   ArrowDown,
-  Hash
+  Hash,
+  Code
 } from "lucide-react";
 import { 
   Popover,
@@ -721,12 +725,25 @@ const Inspector = () => {
               </div>
             </div>
             
-            <Accordion type="multiple" defaultValue={["transform"]}>
-              <TransformComponent />
-              <SpriteRendererComponent />
-              <ColliderComponent />
-              <RigidBodyComponent />
-            </Accordion>
+            <Tabs defaultValue="components">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="components">Components</TabsTrigger>
+                <TabsTrigger value="code">Code</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="components" className="p-0">
+                <Accordion type="multiple" defaultValue={["transform"]}>
+                  <TransformComponent />
+                  <SpriteRendererComponent />
+                  <ColliderComponent />
+                  <RigidBodyComponent />
+                </Accordion>
+              </TabsContent>
+              
+              <TabsContent value="code" className="p-0 h-full">
+                <BlockScriptEditor />
+              </TabsContent>
+            </Tabs>
           </>
         )}
       </div>

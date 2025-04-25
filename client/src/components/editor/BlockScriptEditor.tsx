@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { GameObject } from "@/lib/engine/GameObject";
 import { Script } from "@/lib/engine/components/Script";
 import { 
-  PuzzlePiece, 
+  Puzzle, 
   Plus, 
   Save, 
   Trash2, 
@@ -198,8 +198,17 @@ const BlockScriptEditor = () => {
     if (!selectedGameObject) return;
     
     scripts.forEach(script => {
-      let scriptComponent = selectedGameObject.getComponents("Script")
-        .find((s: Script) => s.name === script.name) as Script | undefined;
+      // Find the script component with matching name
+      const comps = selectedGameObject.getComponents("Script");
+      let scriptComponent: Script | undefined;
+      
+      for (const comp of comps) {
+        const scriptComp = comp as Script;
+        if (scriptComp.name === script.name) {
+          scriptComponent = scriptComp;
+          break;
+        }
+      }
       
       // If the script component doesn't exist, create it
       if (!scriptComponent) {
@@ -424,7 +433,7 @@ const BlockScriptEditor = () => {
     <div className="h-full flex flex-col">
       <div className="flex justify-between items-center p-2 border-b">
         <div className="font-medium flex items-center">
-          <PuzzlePiece className="h-4 w-4 mr-2" />
+          <Puzzle className="h-4 w-4 mr-2" />
           Block Script Editor
         </div>
         
@@ -565,7 +574,7 @@ const BlockScriptEditor = () => {
                       )
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
-                        <PuzzlePiece className="h-10 w-10 mb-2 opacity-20" />
+                        <Puzzle className="h-10 w-10 mb-2 opacity-20" />
                         <p>Drag blocks from the left panel to build your script</p>
                       </div>
                     )}
@@ -576,7 +585,7 @@ const BlockScriptEditor = () => {
             </DragDropContext>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-              <PuzzlePiece className="h-12 w-12 mb-2 opacity-20" />
+              <Puzzle className="h-12 w-12 mb-2 opacity-20" />
               <p>Select or create a script to start building</p>
             </div>
           )}
